@@ -1,0 +1,11 @@
+{
+  "rules": [
+    {"id": "R001", "name": "Block system-wide delete", "condition": {"action_type": "delete", "scope": "system_wide"}, "decision": "BLOCK"},
+    {"id": "R002", "name": "Block high-risk simulation", "condition": {"risk_level": "HIGH"}, "decision": "BLOCK"},
+    {"id": "R003", "name": "Block adversarial prompts", "condition": {"is_adversarial": true}, "decision": "BLOCK"},
+    {"id": "R004", "name": "Block confirmed drift", "condition": {"drift_detected": true, "drift_score_gt": 0.6}, "decision": "BLOCK"},
+    {"id": "R005", "name": "Warn on medium risk", "condition": {"risk_level": "MEDIUM"}, "decision": "WARN"},
+    {"id": "R006", "name": "Allow safe read/summarize", "condition": {"action_type": ["read", "summarize"], "risk_level": "LOW"}, "decision": "ALLOW"}
+  ],
+  "default_decision": "BLOCK"
+}

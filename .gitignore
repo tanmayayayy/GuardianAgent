@@ -1,0 +1,64 @@
+# Dependencies
+node_modules/
+.pnpm-debug.log*
+.npm/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environment Variables (CRITICAL)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs/
+*.log
+*.jsonl
+
+# Build and Distribution
+dist/
+dist-ssr/
+build/
+*.exe
+*.bin
+out/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.project
+.settings/
+.classpath
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+
+# Framework specific
+openclaw-framework/
+.openclaw/
+
+# Testing
+coverage/
+.nyc_output/
+htmlcov/
+
+# Local data (if using local JSON DB)
+decisions.jsonl
+policies.json.bak
+.env
