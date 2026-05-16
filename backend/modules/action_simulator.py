@@ -41,12 +41,11 @@ def simulate_action(intent: dict) -> dict:
         notes.append("Arbitrary execution is always high risk.")
         predicted_outcome = f"Command execution on {target}."
 
-    else: # unknown
+    else:
         risk_level = "HIGH"
         notes.append("Unknown action type cannot be safely simulated.")
         predicted_outcome = "Unknown outcome."
 
-    # Override risk based on file count as per reqs
     if files_affected > 50:
         risk_level = "HIGH"
     elif files_affected >= 5:

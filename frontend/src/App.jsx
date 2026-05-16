@@ -6,7 +6,7 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [logs, setLogs] = useState([]);
-  const [pipelineState, setPipelineState] = useState(0); // 0-4 steps
+  const [pipelineState, setPipelineState] = useState(0);
 
   const fetchLogs = async () => {
     try {
@@ -29,7 +29,6 @@ const App = () => {
     setPipelineState(1);
 
     try {
-      // Simulate pipeline animation
       const steps = [1, 2, 3, 4];
       for (const step of steps) {
         setPipelineState(step);

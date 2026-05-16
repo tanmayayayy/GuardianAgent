@@ -1,10 +1,6 @@
 from config.integrations import armor_claw
 
 def evaluate_armor_claw(intent: dict) -> dict:
-    """
-    Evaluates the intent through the ArmorClaw security layer.
-    ArmorClaw specialized in intent-based execution validation.
-    """
     try:
         validation = armor_claw.validate_intent(intent)
         return {

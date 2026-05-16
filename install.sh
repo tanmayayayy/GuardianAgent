@@ -1,8 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-# ArmorIQ Installer for OpenClaw
-# Usage: curl -fsSL https://armoriq.ai/install-armoriq.sh | bash
 
 R='\033[1;31m'
 DR='\033[0;31m'
@@ -534,8 +532,6 @@ ensure_python3() {
 
 
 resolve_latest_version() {
-  # To use the latest npm version, uncomment the next line and comment out the hardcoded one
-  # npm view openclaw version 2>/dev/null || echo ""
   echo "2026.3.2"
 }
 
@@ -553,7 +549,6 @@ resolve_version() {
 clone_openclaw() {
   local dir="$ARMORIQ_INSTALL_DIR"
   local git_version="$ARMORIQ_OC_VERSION"
-  # npm patch releases use YYYY.M.D-N suffix; git tags don't have the -N part
   if [[ "$git_version" =~ ^[0-9]{4}\.[0-9]+\.[0-9]+-[0-9]+$ ]]; then
     git_version="${git_version%-*}"
   fi
@@ -586,10 +581,8 @@ clone_openclaw() {
   ui_success "Cloned OpenClaw ${tag}"
 }
 
-# ── Apply ArmorIQ patches (inlined) ────────────────────────
 
 
-# ── Apply ArmorIQ patches ─────────────────────
 
 apply_patches() {
   local prev_dir="$PWD"
@@ -636,7 +629,6 @@ apply_patches() {
     fi
   done
 
-  # --- 1. Extend PluginHookAgentContext with sender/channel/model fields ---
   patch_bar "types.ts  PluginHookAgentContext"
 
   python3 << 'PYEOF'
@@ -680,7 +672,6 @@ else:
     print("  [skip] PluginHookAgentContext not found")
 PYEOF
 
-  # --- 2. Add tools array to BeforeAgentStartEvent ---
   patch_bar "types.ts  BeforeAgentStartEvent.tools"
 
   if grep -q 'tools?: Array<{' "$TYPES_FILE"; then
@@ -695,7 +686,6 @@ PYEOF
     rm -f "${TYPES_FILE}.bak"
   fi
 
-  # --- 3. Patch attempt.ts hookCtx with sender/model fields ---
   patch_bar "attempt.ts  hookCtx sender/model"
 
   python3 << 'PYEOF'
@@ -705,7 +695,6 @@ with open("src/agents/pi-embedded-runner/run/attempt.ts", "r") as f:
 if "senderId: params.senderId ?? undefined" in content and "model: params.model" in content:
     print("  [skip] attempt.ts hookCtx already patched")
 else:
-    # v2026.3.x pattern: hookCtx with trigger and channelId fields
     old_v3x = """        const hookCtx = {
           agentId: hookAgentId,
           sessionKey: params.sessionKey,
@@ -734,7 +723,6 @@ else:
           modelRegistry: params.modelRegistry,
         };"""
 
-    # v2026.2.19 pattern: hookCtx without trigger/channelId
     old_v19 = """        const hookCtx = {
           agentId: hookAgentId,
           sessionKey: params.sessionKey,
@@ -776,7 +764,6 @@ else:
         print("  [warn] Could not find hookCtx pattern in attempt.ts")
 PYEOF
 
-  # --- 4. Patch attempt.ts resolvePromptBuildHookResult + PromptBuildHookRunner for tools ---
   patch_bar "attempt.ts  tools in hooks"
 
   python3 << 'PYEOF'
@@ -785,7 +772,6 @@ with open("src/agents/pi-embedded-runner/run/attempt.ts", "r") as f:
 
 changed = False
 
-# Add tools to PromptBuildHookRunner.runBeforeAgentStart signature
 old_runner_sig = 'event: { prompt: string; messages: unknown[] },\n    ctx: PluginHookAgentContext,\n  ) => Promise<PluginHookBeforeAgentStartResult | undefined>;'
 new_runner_sig = 'event: { prompt: string; messages: unknown[]; tools?: Array<{ name: string; description?: string; parameters?: Record<string, unknown> }> },\n    ctx: PluginHookAgentContext,\n  ) => Promise<PluginHookBeforeAgentStartResult | undefined>;'
 
@@ -796,7 +782,6 @@ elif old_runner_sig in content:
     changed = True
     print("  [patch] PromptBuildHookRunner.runBeforeAgentStart tools added")
 
-# Add tools param to resolvePromptBuildHookResult
 old_resolve_sig = """export async function resolvePromptBuildHookResult(params: {
   prompt: string;
   messages: unknown[];
@@ -814,7 +799,6 @@ elif old_resolve_sig in content:
     changed = True
     print("  [patch] resolvePromptBuildHookResult tools param added")
 
-# Pass tools in the runBeforeAgentStart event inside resolvePromptBuildHookResult
 old_event_pass = ("          .runBeforeAgentStart(\n"
     "            {\n"
     "              prompt: params.prompt,\n"
@@ -834,7 +818,6 @@ elif old_event_pass in content:
     changed = True
     print("  [patch] tools passed in runBeforeAgentStart event")
 
-# Pass tools from the call site that invokes resolvePromptBuildHookResult
 old_call = """        const hookResult = await resolvePromptBuildHookResult({
           prompt: params.prompt,
           messages: activeSession.messages,
@@ -861,7 +844,6 @@ if changed:
         f.write(content)
 PYEOF
 
-  # --- 5. Extend PluginHookToolContext with sender fields ---
   patch_bar "types.ts  PluginHookToolContext"
 
   python3 << 'PYEOF'
@@ -897,7 +879,6 @@ else:
     print("  [skip] PluginHookToolContext not found")
 PYEOF
 
-  # --- 6. Extend HookContext + forwarding in before-tool-call.ts ---
   patch_bar "before-tool-call.ts  HookContext + forwarding"
 
   python3 << 'PYEOF'
@@ -938,18 +919,14 @@ if m:
         changed = True
         print("  [patch] HookContext type extended")
 
-# Context forwarding: add sender spread fields after the runId spread line
 if "senderId: args.ctx.senderId" in content:
     print("  [skip] context forwarding already patched")
 else:
     import re
-    # v3.x uses spread syntax: ...(args.ctx?.X ? { X: args.ctx.X } : {})
     run_id_spread = "...(args.ctx?.runId ? { runId: args.ctx.runId } : {}),"
     tool_call_spread = "...(args.toolCallId ? { toolCallId: args.toolCallId } : {}),"
-    # Find the toolContext block that has runId spread followed by toolCallId spread
     idx = content.find(run_id_spread)
     if idx != -1:
-        # Find the next line after runId spread
         eol = content.index("\n", idx)
         indent = "      "
         sender_lines = (
@@ -962,7 +939,6 @@ else:
         changed = True
         print("  [patch] context forwarding extended (spread style)")
     else:
-        # Older format: direct property assignment
         old_pass = ("toolName,\n"
             "        agentId: args.ctx?.agentId,\n"
             "        sessionKey: args.ctx?.sessionKey,\n"
@@ -988,7 +964,6 @@ if changed:
         f.write(content)
 PYEOF
 
-  # --- 7. Extend wrapToolWithBeforeToolCallHook with sender fields ---
   patch_bar "pi-tools.ts  wrapToolWithBeforeToolCallHook"
 
   python3 << 'PYEOF'
@@ -1004,12 +979,10 @@ except FileNotFoundError:
 if "senderId: options?.senderId ?? undefined" in content:
     print("  [skip] wrapToolWithBeforeToolCallHook already extended")
 else:
-    # v3.2 has loopDetection with nested braces — use line-by-line approach
     lines = content.split("\n")
     insert_idx = None
     for i, line in enumerate(lines):
         if "wrapToolWithBeforeToolCallHook(tool, {" in line:
-            # Find the closing })  (scan forward past nested braces)
             depth = 0
             for j in range(i, min(i + 20, len(lines))):
                 depth += lines[j].count("{") - lines[j].count("}")
@@ -1037,7 +1010,6 @@ else:
         print("  [warn] wrapToolWithBeforeToolCallHook pattern not found")
 PYEOF
 
-  # --- 8. Patch run.ts: import type, type hookCtx, add model/modelRegistry, remove before_agent_start ---
   patch_bar "run.ts  hookCtx + model + no before_agent_start"
 
   python3 << 'PYEOF'
@@ -1049,7 +1021,6 @@ with open(fpath, "r") as f:
 
 changed = False
 
-# 8a. Add PluginHookAgentContext import
 if "PluginHookAgentContext" not in content:
     old_import = 'import type { PluginHookBeforeAgentStartResult } from "../../plugins/types.js";'
     new_import = 'import type { PluginHookAgentContext, PluginHookBeforeAgentStartResult } from "../../plugins/types.js";'
@@ -1062,7 +1033,6 @@ if "PluginHookAgentContext" not in content:
 else:
     print("  [skip] PluginHookAgentContext already imported")
 
-# 8b. Type hookCtx as PluginHookAgentContext
 if "const hookCtx: PluginHookAgentContext = {" in content:
     print("  [skip] hookCtx already typed")
 elif "const hookCtx = {" in content:
@@ -1070,12 +1040,10 @@ elif "const hookCtx = {" in content:
     changed = True
     print("  [patch] hookCtx typed as PluginHookAgentContext")
 
-# 8c. Add sender fields to hookCtx in run.ts (if missing)
 hookctx_match = re.search(r'const hookCtx(?:: PluginHookAgentContext)? = \{(.*?)\};', content, re.DOTALL)
 if hookctx_match:
     hookctx_body = hookctx_match.group(1)
     if "senderId" not in hookctx_body:
-        # Find the closing of hookCtx and add sender fields before it
         old_hookctx_end = "runId: params.runId,\n      };"
         new_hookctx_end = ("runId: params.runId,\n"
             "        senderId: params.senderId ?? undefined,\n"
@@ -1090,7 +1058,6 @@ if hookctx_match:
     else:
         print("  [skip] run.ts hookCtx already has sender fields")
 
-# 8d. Add model/modelRegistry after resolveModel()
 if "hookCtx.model = model;" in content:
     print("  [skip] model/modelRegistry already assigned to hookCtx")
 else:
@@ -1109,7 +1076,6 @@ else:
     else:
         print("  [warn] Could not find resolveModel error check")
 
-# 8e. Remove before_agent_start call from run.ts (it should only run in attempt.ts)
 bas_block_re = re.compile(
     r'\s+if \(hookRunner\?\.hasHooks\("before_agent_start"\)\) \{\s*'
     r'try \{.*?legacyBeforeAgentStartResult.*?'
@@ -1128,7 +1094,6 @@ else:
     else:
         print("  [warn] Could not match before_agent_start block in run.ts")
 
-# 8f. Set legacyBeforeAgentStartResult: undefined in attempt call
 if "legacyBeforeAgentStartResult: undefined," in content:
     print("  [skip] legacyBeforeAgentStartResult already set to undefined")
 elif "legacyBeforeAgentStartResult," in content:
@@ -1141,7 +1106,6 @@ if changed:
         f.write(content)
 PYEOF
 
-  # --- 9. Forward sender fields in run.ts (for subagent spawns) ---
   patch_bar "run.ts  sender field forwarding"
 
   python3 << 'PYEOF'
@@ -1185,7 +1149,6 @@ else:
         print("  [warn] run.ts: could not find insertion point")
 PYEOF
 
-  # --- 10. Fix wrapping order: abort signal first, then hook wrapper ---
   patch_bar "pi-tools.ts  wrapping order (abort before hooks)"
 
   python3 << 'PYEOF'
@@ -1673,7 +1636,6 @@ write_env_file() {
 
   cat >> "$env_file" << ENVEOF
 
-# ArmorIQ
 ARMORIQ_API_KEY=${key_val}
 IAP_BACKEND_URL=https://customer-api.armoriq.ai
 CSRG_URL=https://customer-iap.armoriq.ai
@@ -1742,35 +1704,28 @@ main() {
     return 0
   fi
 
-  # [1/5] Environment
   ui_stage "Preparing environment"
   ensure_git
   ensure_pnpm
   ensure_python3
 
-  # [2/5] Clone
   ui_stage "Cloning OpenClaw v${ARMORIQ_OC_VERSION}"
   clone_openclaw
 
-  # [3/5] Patch
   ui_stage "Applying ArmorClaw patches"
   apply_patches
 
-  # [4/5] Build
   ui_stage "Building OpenClaw"
   build_openclaw
 
-  # [5/7] ArmorClaw Setup
   ui_stage "Setting up ArmorClaw"
   install_plugin
 
-  # [6/7] Channels & Agent
   ui_stage "Configuring channels and agent"
   setup_telegram
   setup_agent_model
   setup_api_key
 
-  # [7/7] Write config
   ui_stage "Writing configuration"
   configure_openclaw_json
   write_env_file

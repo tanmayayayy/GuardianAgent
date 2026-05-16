@@ -7,13 +7,11 @@ DANGEROUS_KEYWORDS = [
 ]
 
 def check_adversarial(prompt: str) -> dict:
-    # 1. Keyword check
     flagged_segments = []
     for keyword in DANGEROUS_KEYWORDS:
         if keyword.lower() in prompt.lower():
             flagged_segments.append(keyword)
             
-    # 2. ArmorIQ scan (falling back to placeholder if SDK fails/not real)
     try:
         scan_result = armoriq.scan(prompt)
     except:
@@ -29,7 +27,7 @@ def check_adversarial(prompt: str) -> dict:
     risk_score = scan_result.get("risk_score", 0.0)
     
     if len(flagged_segments) > 0:
-        risk_score = max(risk_score, 0.9) # High risk if keywords found
+        risk_score = max(risk_score, 0.9)
         
     return {
         "is_adversarial": is_adversarial,

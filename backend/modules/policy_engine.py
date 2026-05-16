@@ -4,13 +4,6 @@ import os
 POLICIES_PATH = os.getenv("POLICIES_PATH", "policies.json")
 
 def evaluate_policy(context: dict) -> dict:
-    """
-    context includes:
-    - intent: dict
-    - adversarial: dict
-    - simulation: dict
-    - drift: dict
-    """
     try:
         with open(POLICIES_PATH, 'r') as f:
             policies = json.load(f)
@@ -30,12 +23,10 @@ def evaluate_policy(context: dict) -> dict:
         condition = rule.get("condition", {})
         match = True
         
-        # Check adversarial
         if "is_adversarial" in condition:
             if context.get("adversarial", {}).get("is_adversarial") != condition["is_adversarial"]:
                 match = False
         
-        # Check action_type
         if "action_type" in condition:
             allowed_types = condition["action_type"]
             if isinstance(allowed_types, str):
@@ -43,17 +34,14 @@ def evaluate_policy(context: dict) -> dict:
             if context.get("intent", {}).get("action_type") not in allowed_types:
                 match = False
                 
-        # Check scope
         if "scope" in condition:
             if context.get("intent", {}).get("scope") != condition["scope"]:
                 match = False
                 
-        # Check risk_level
         if "risk_level" in condition:
             if context.get("simulation", {}).get("risk_level") != condition["risk_level"]:
                 match = False
                 
-        # Check drift
         if "drift_detected" in condition:
             if context.get("drift", {}).get("drift_detected") != condition["drift_detected"]:
                 match = False

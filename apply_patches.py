@@ -24,8 +24,6 @@ def patch_file(rel_path, patches):
     else:
         print(f"No changes for {rel_path}")
 
-# Patch 1: src/plugins/types.ts
-# Extending context types
 patch_file("src/plugins/types.ts", [
     (
         "export type PluginHookAgentContext = {",
@@ -37,7 +35,6 @@ patch_file("src/plugins/types.ts", [
     )
 ])
 
-# Patch 2: Passing context in attempt.ts
 patch_file("src/agents/pi-embedded-runner/run/attempt.ts", [
     (
         "trigger: params.trigger,",
