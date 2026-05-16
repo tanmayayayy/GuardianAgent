@@ -32,7 +32,6 @@ Real-time Logging — Complete audit trail of all decisions
 | Frontend | React 18, Vite, Lucide-React, Framer Motion |
 | Security | ArmorIQ, ArmorClaw, OpenClaw |
 | Validation | Pydantic |
-| Deployment | Render |
 
 ---
 
@@ -81,22 +80,22 @@ GuardianAgent/
 
 ### Evaluation
 
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| POST | /evaluate | Evaluate prompt through 7-stage pipeline | No |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /evaluate | Evaluate prompt through 7-stage pipeline |
 
 ### Logging
 
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| GET | /logs | Retrieve all decision logs (newest first) | No |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /logs | Retrieve all decision logs (newest first) |
 
 ### Policies
 
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| GET | /policies | Get current security policies | No |
-| POST | /policies | Update security policies | No |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /policies | Get current security policies |
+| POST | /policies | Update security policies |
 
 ---
 
@@ -200,30 +199,15 @@ Test the system with these prompts:
 
 ---
 
-## Deployment
-
-Deploy to Render:
-
-1. Push code to GitHub
-2. Create Web Service on Render
-3. Set environment variables (GEMINI_API_KEY)
-4. Build command: `pip install -r backend/requirements.txt`
-5. Start command: `python backend/main.py`
-
----
-
 ## Future Improvements
 
-Docker — Containerize application for consistent deployment
-Unit & Integration Tests — pytest with coverage reports
-CI/CD Pipeline — GitHub Actions for automated testing
-Redis — Caching for improved performance
-Rate Limiting — Prevent API abuse
-User Authentication — Secure access to logs and policies
-Multi-LLM Support — Switch between different LLM providers
+| Feature | Description |
+|---------|-------------|
+| **Docker** | Containerize application for consistent deployment |
+| **Unit & Integration Tests** | pytest with coverage reports |
+| **CI/CD Pipeline** | GitHub Actions for automated testing |
+| **Redis** | Caching for improved performance |
+| **Rate Limiting** | Prevent API abuse |
+| **User Authentication** | Secure access to logs and policies |
+| **Multi-LLM Support** | Switch between different LLM providers |
 
----
-
-## License
-
-Internal use only. Part of the Guardian Security Framework.
